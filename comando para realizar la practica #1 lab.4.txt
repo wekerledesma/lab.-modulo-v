@@ -1,0 +1,204 @@
+comando para realizar la practica #1
+
+
+Instalación de Apache
+
+sudo yum update -y
+sudo yum install httpd -y
+sudo systemctl start httpd
+sudo systemctl enable httpd
+2️⃣ Configuración del primer sitio en el puerto 80
+bash
+Copiar
+Editar
+sudo mkdir -p /var/www/html/site1
+echo "<h1>Hola Mundo</h1>" | sudo tee /var/www/html/site1/index.html
+sudo nano /etc/httpd/conf.d/site1.conf
+🔹 Dentro del archivo site1.conf, agregar:
+
+mathematica
+
+<VirtualHost *:80>
+    DocumentRoot "/var/www/html/site1"
+    ServerName site1.local
+    <Directory "/var/www/html/site1">
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>
+
+sudo systemctl restart httpd
+echo "127.0.0.1 site1.local" | sudo tee -a /etc/hosts
+3️⃣ Configuración del segundo sitio en el puerto 8080
+
+sudo mkdir -p /var/www/html/site2
+echo "<h1>Mi Nombre: [Tu Nombre]</h1><h2>Matrícula: [Tu Matrícula]</h2><h3>Materia: [Nombre de la Materia]</h3>" | sudo tee /var/www/html/site2/index.html
+sudo nano /etc/httpd/conf.d/site2.conf
+🔹 Dentro del archivo site2.conf, agregar:
+
+mathematica
+
+<VirtualHost *:8080>
+    DocumentRoot "/var/www/html/site2"
+    ServerName site2.local
+    <Directory "/var/www/html/site2">
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>
+bash
+Copiar
+Editar
+sudo nano /etc/httpd/conf/httpd.conf
+🔹 Agregar la línea:
+
+yaml
+
+Listen 8080
+
+sudo systemctl restart httpd
+echo "127.0.0.1 site2.local" | sudo tee -a /etc/hosts
+4️⃣ Habilitar el puerto 8080 en el firewall
+
+sudo firewall-cmd --add-port=8080/tcp --permanent
+sudo firewall-cmd --reload
+
+sudo firewall-cmd --list-ports
+Debe mostrar: 8080/tcp
+
+5️⃣ Verificar que Apache está escuchando en los puertos 80 y 8080
+
+sudo ss -tulnp | grep httpd
+Debe mostrar algo como:
+
+
+LISTEN 0 128 0.0.0.0:80   ... httpd
+LISTEN 0 128 0.0.0.0:8080 ... httpd
+6️⃣ Probar en el navegador
+Para el primer sitio web (puerto 80):
+👉 http://site1.local
+Para el segundo sitio web (puerto 8080):
+👉 http://site2.local:8080
+
+
+PASOS COMPLETOS Y COMANDOS UTILIZADOS. practica #2
+1️⃣ Actualizar el sistema (opcional pero recomendado)
+
+
+sudo dnf update -y
+2️⃣ Instalar Postfix y mailx (cliente de correo)
+
+
+sudo dnf install postfix mailx -y
+3️⃣ Habilitar e iniciar Postfix
+
+
+sudo systemctl enable --now postfix
+4️⃣ Editar la configuración de Postfix (main.cf)
+
+
+sudo nano /etc/postfix/main.cf
+👉 Configuraciones aplicadas en main.cf
+(Agregar o modificar estas líneas)
+
+
+relayhost = [smtp.gmail.com]:587
+smtp_sasl_auth_enable = yes
+smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
+smtp_sasl_security_options = noanonymous
+smtp_sasl_tls_security_options = noanonymous
+smtp_tls_security_level = encrypt
+smtp_tls_CAfile = /etc/ssl/certs/ca-bundle.crt
+5️⃣ Configurar credenciales de autenticación con Gmail
+
+
+sudo nano /etc/postfix/sasl_passwd
+👉 Agregar esta línea dentro del archivo (sasl_passwd):
+
+markdown
+
+[smtp.gmail.com]:587 wekelledesma@gmail.com:tu_contraseña_o_app_password
+6️⃣ Aplicar los permisos correctos
+
+
+sudo chmod 600 /etc/postfix/sasl_passwd
+7️⃣ Convertir el archivo en formato Postfix y recargar configuración
+
+
+sudo postmap /etc/postfix/sasl_passwd
+sudo systemctl restart postfix
+8️⃣ Verificar el estado de Postfix
+
+
+sudo systemctl status postfix
+9️⃣ Enviar un correo de prueba (desde la terminal)
+
+
+echo "Este es un correo de prueba desde Postfix en CentOS." | mail -s "Correo de Prueba" wekelledesma@gmail.com
+🔟 Verificar si el correo fue enviado correctamente
+
+
+sudo tail -f /var/log/maillog
+👉 Si ves un mensaje similar a esto en el log:
+
+
+status=sent (250 2.0.0 OK)
+✅ El correo fue enviado correctamente.
+
+1️⃣1️⃣ Verificar la cola de correo (si hay correos pendientes o fallidos)
+
+
+mailq
+1️⃣2️⃣ Forzar el envío de correos en cola (si hay mensajes pendientes)
+
+
+sudo postfix flush
+1️⃣3️⃣ Eliminar correos en cola (si hay errores y quieres limpiarla)
+
+
+sudo postsuper -d ALL
+
+
+ Comandos para instalar CUPS y sus dependencias practica #3
+Actualizar el sistema:
+
+sudo dnf update -y
+Instalar CUPS y sus dependencias:
+
+sudo dnf install cups cups-client cups-filters cups-ipptool -y
+Habilitar e iniciar el servicio CUPS:
+
+sudo systemctl enable --now cups
+🛠️ Comandos para configurar CUPS para acceso remoto:
+Editar el archivo de configuración de CUPS:
+
+
+sudo nano /etc/cups/cupsd.conf
+Reemplazar Listen localhost:631 con Port 631 y permitir acceso remoto (modificar las líneas correspondientes de "Deny" a "Allow all").
+
+Reiniciar el servicio CUPS para aplicar los cambios:
+
+
+sudo systemctl restart cups
+Permitir tráfico en el firewall para CUPS:
+
+
+sudo firewall-cmd --add-port=631/tcp --permanent
+sudo firewall-cmd --reload
+🖨️ Comandos para instalar y configurar la impresora virtual PDF:
+Instalar el controlador de la impresora PDF:
+
+sudo dnf install cups-pdf -y
+Habilitar la impresora PDF en CUPS:
+
+sudo lpadmin -p PDF_Printer -E -v cups-pdf:/ -m generic.ppd
+Verificar que la impresora está instalada:
+
+lpstat -p
+🖥️ Comandos para verificar o mover el archivo PDF generado:
+Verificar la ubicación del archivo PDF generado:
+
+ls /var/spool/cups-pdf/
+Mover el archivo PDF a otra ubicación accesible:
+
+sudo mv /var/spool/cups-pdf/USERNAME/*.pdf /home/USERNAME/
